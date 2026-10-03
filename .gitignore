@@ -1,0 +1,15 @@
+# Nunca subir binarios ni configuraciones de productos de terceros
+*.apk
+*.aab
+*.obb
+*.so
+*.dex
+managementConfig.json
+deviceLog.txt
+
+# Datos de pacientes exportados
+campo_*.json
+campo_*.csv
+
+.DS_Store
+node_modules/

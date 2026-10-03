@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Pruebas · Perimetría Libre</title>
+  <style>
+    body { font: 14px/1.5 ui-monospace, Menlo, monospace; margin: 24px; background: #fff; color: #111; }
+    .ok { color: #0a7a2f; } .fail { color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>Pruebas del núcleo</h1>
+  <pre id="out"></pre>
+  <script type="module">
+    import { run } from './harness.js';
+    import './core.test.js';
+    import './v2.test.js';
+    import './v3.test.js';
+    const out = document.getElementById('out');
+    const failed = await run((line, ok) => {
+      const span = document.createElement('span');
+      span.className = ok ? 'ok' : 'fail';
+      span.textContent = line + '\n';
+      out.appendChild(span);
+    });
+    document.title = failed ? `✘ ${failed} fallas` : '✔ pruebas OK';
+  </script>
+</body>
+</html>

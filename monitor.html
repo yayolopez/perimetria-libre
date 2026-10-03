@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monitor del operador</title>
+  <meta name="theme-color" content="#0f3d3e">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="icon.svg" alt="" width="28" height="28">
+      <span>Monitor del operador</span>
+    </div>
+    <nav><a class="button" href="./">← Perimetría Libre</a></nav>
+  </header>
+  <main>
+    <section class="card no-print" id="connect">
+      <h1>Conectar con el examen</h1>
+      <div class="actions">
+        <button type="button" id="connect-local" class="primary">Examen en este equipo</button>
+        <form id="remote-form" class="inline-form">
+          <input id="remote-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="Código de 6 dígitos" aria-label="Código del examen">
+          <button type="submit">Conectar a otro equipo</button>
+        </form>
+      </div>
+      <p id="conn-status" class="hint">"Este equipo" sirve para seguir el examen en otra ventana o en un segundo monitor. Para un visor VR, active "Monitor en otro equipo" en el visor y escriba aquí el código.</p>
+    </section>
+    <section class="card no-print">
+      <div id="monitor"></div>
+    </section>
+    <section class="card" id="result-card" hidden>
+      <div class="toolbar no-print">
+        <h2>Informe recibido</h2>
+        <span class="spacer"></span>
+        <button type="button" id="save-result">Guardar en este equipo</button>
+        <button type="button" id="print-result" class="primary">Imprimir / PDF</button>
+      </div>
+      <article id="result" class="report"></article>
+    </section>
+  </main>
+  <script type="module" src="src/app/monitor.js"></script>
+</body>
+</html>

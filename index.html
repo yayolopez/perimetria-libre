@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Perimetría Libre</title>
+  <meta name="description" content="Campimetría (perimetría estática) de código abierto para visores de realidad virtual y pantallas.">
+  <meta name="theme-color" content="#0f3d3e">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="icon.svg" alt="" width="28" height="28">
+      <span>Perimetría Libre</span>
+    </div>
+    <nav>
+      <button type="button" data-nav="new">Campimetría</button>
+      <button type="button" data-nav="tests">Otras pruebas</button>
+      <button type="button" data-nav="history">Historial</button>
+      <button type="button" data-nav="normative">Base normativa</button>
+      <button type="button" data-nav="calibration">Calibración</button>
+      <button type="button" data-nav="about">Acerca de</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Nuevo examen -->
+    <section data-view="new">
+      <p class="banner">Prototipo de investigación de código abierto. No es un dispositivo médico certificado.</p>
+      <form id="exam-form" class="card" autocomplete="off">
+        <h1>Nuevo examen</h1>
+        <div class="grid">
+          <label>Paciente (ID o iniciales)
+            <input name="patientId" maxlength="40" placeholder="Ej. JP-0142">
+          </label>
+          <label>Edad
+            <input name="age" type="number" min="1" max="120" inputmode="numeric">
+          </label>
+          <fieldset class="eye">
+            <legend>Ojo</legend>
+            <label class="pill"><input type="radio" name="eye" value="OD" checked> OD · derecho</label>
+            <label class="pill"><input type="radio" name="eye" value="OI"> OI · izquierdo</label>
+          </fieldset>
+          <label>Corrección usada
+            <input name="correction" maxlength="60" placeholder="Ej. +1.50 −0.75 × 90">
+          </label>
+          <label>Patrón <select name="pattern"></select></label>
+          <label>Estrategia <select name="strategy"></select></label>
+        </div>
+
+        <details class="options">
+          <summary>Opciones del examen</summary>
+          <div class="grid">
+            <label>Tamaño de estímulo <select name="size"></select></label>
+            <label>Duración del estímulo <select name="durationMs"></select></label>
+            <label>Velocidad <select name="speed"></select></label>
+            <label>Punto de fijación <select name="fixation"></select></label>
+            <label>Controles de confiabilidad <select name="catchPreset"></select></label>
+            <label>Perfil de luminancia <select name="profile"></select></label>
+            <label>Fondo (cd/m²)
+              <input name="background" type="number" min="0.5" max="50" step="0.1">
+            </label>
+            <label>Distancia en pantalla (cm)
+              <input name="distanceCm" type="number" min="20" max="150" step="1">
+            </label>
+          </div>
+          <div class="checks">
+            <label class="check"><input type="checkbox" name="foveal"> Medir umbral foveal</label>
+            <label class="check"><input type="checkbox" name="sound"> Sonido al responder</label>
+            <label class="check"><input type="checkbox" name="gaze"> Vigilar mirada con la cámara (modo pantalla, experimental)</label>
+            <label class="check"><input type="checkbox" name="remoteMonitor"> Monitor en otro equipo (tablet o PC del operador)</label>
+            <label class="check"><input type="checkbox" name="normal"> Sujeto normal: usar para la base normativa</label>
+          </div>
+          <label>Observaciones
+            <input name="notes" maxlength="200" placeholder="Ej. paciente colaborador, pupila 3 mm">
+          </label>
+        </details>
+
+        <p id="range-info" class="hint"></p>
+        <p id="screen-info" class="hint"></p>
+        <p id="remote-info" class="hint" hidden></p>
+        <div class="actions">
+          <button type="button" id="start-xr" class="primary">Iniciar en visor VR</button>
+          <button type="button" id="start-screen">Iniciar en pantalla</button>
+          <button type="button" id="start-sim">Simular paciente</button>
+          <a class="button" href="monitor.html" target="perimetria-monitor">Abrir monitor ↗</a>
+        </div>
+        <p id="xr-status" class="hint"></p>
+      </form>
+
+      <details class="card">
+        <summary>Cómo hacer el examen</summary>
+        <h3>En el visor VR</h3>
+        <ol>
+          <li>No hace falta tapar el otro ojo: el visor muestra los estímulos solo al ojo elegido.</li>
+          <li>Ajuste el visor y la distancia interpupilar. Use la corrección de <b>lejos</b> (lentes o insertos): el visor no necesita adición.</li>
+          <li>Presione <b>Iniciar en visor VR</b> y coloque el visor al paciente.</li>
+          <li>El paciente mira el punto central y presiona el <b>gatillo</b> cada vez que ve una luz. El <b>botón lateral</b> pausa.</li>
+          <li>Siga el examen desde otra tablet o PC con <b>Abrir monitor</b> y el código que aparece al iniciar.</li>
+        </ol>
+        <h3>En pantalla</h3>
+        <ol>
+          <li>Calibre la pantalla una vez (Calibración → Pantalla) con una tarjeta bancaria.</li>
+          <li>Siente al paciente a la distancia indicada, con la mentonera o apoyo, y tape el otro ojo.</li>
+          <li>Use la adición de cerca sugerida para esa distancia.</li>
+          <li>Barra espaciadora o clic = respuesta, P = pausa, Esc = salir. El monitor puede abrirse en otra ventana o en un segundo monitor.</li>
+        </ol>
+      </details>
+    </section>
+
+    <!-- En curso: monitor local -->
+    <section data-view="running" hidden>
+      <div class="card">
+        <div class="toolbar">
+          <h1>Examen en curso</h1>
+          <span class="spacer"></span>
+          <span id="remote-code" class="code-badge" hidden></span>
+        </div>
+        <div id="local-monitor"></div>
+      </div>
+    </section>
+
+    <!-- Informe -->
+    <section data-view="report" hidden>
+      <div class="toolbar no-print">
+        <button type="button" data-nav="new">← Nuevo examen</button>
+        <label class="inline">Base normativa <select id="report-norm"></select></label>
+        <span class="spacer"></span>
+        <button type="button" id="export-json">Exportar JSON</button>
+        <button type="button" id="export-csv">Exportar CSV</button>
+        <button type="button" id="print" class="primary">Imprimir / PDF</button>
+      </div>
+      <article id="report" class="card report"></article>
+    </section>
+
+    <!-- Otras pruebas -->
+    <section data-view="tests" hidden>
+      <div class="card">
+        <h1>Otras pruebas</h1>
+        <p class="muted">Funcionan en el visor VR y en pantalla. Las pruebas binoculares (estereopsis, foria, Hess) usan en pantalla lentes rojo/verde con el <b>rojo en el ojo derecho</b>.</p>
+        <div id="test-cards" class="test-cards"></div>
+      </div>
+      <form id="test-form" class="card" autocomplete="off" hidden>
+        <h2 id="test-title"></h2>
+        <p id="test-desc" class="muted"></p>
+        <div class="grid">
+          <label>Paciente (ID o iniciales) <input name="patientId" maxlength="40"></label>
+          <label>Edad <input name="age" type="number" min="1" max="120" inputmode="numeric"></label>
+          <label><span id="test-eye-label">Ojo</span> <select name="eye"></select></label>
+          <label>Distancia en pantalla (cm) <input name="distanceCm" type="number" min="20" max="800" step="1"></label>
+        </div>
+        <p id="test-info" class="hint"></p>
+        <div class="actions">
+          <button type="button" id="test-xr" class="primary">Iniciar en visor VR</button>
+          <button type="button" id="test-screen">Iniciar en pantalla</button>
+          <button type="button" id="test-sim">Simular</button>
+        </div>
+      </form>
+    </section>
+
+    <section data-view="test-running" hidden>
+      <div class="card center">
+        <h1 id="test-running-title">Prueba en curso</h1>
+        <p class="muted">Esc (en pantalla) o salir del visor interrumpe la prueba.</p>
+        <progress id="test-progress" max="1" value="0"></progress>
+      </div>
+    </section>
+
+    <section data-view="test-report" hidden>
+      <div class="toolbar no-print">
+        <button type="button" data-nav="tests">← Otras pruebas</button>
+        <span class="spacer"></span>
+        <button type="button" id="test-export">Exportar JSON</button>
+        <button type="button" id="test-print" class="primary">Imprimir / PDF</button>
+      </div>
+      <article id="test-report" class="card report"></article>
+    </section>
+
+    <!-- Historial -->
+    <section data-view="history" hidden>
+      <div class="card">
+        <div class="toolbar">
+          <h1>Historial</h1>
+          <span class="spacer"></span>
+          <label class="button">Importar JSON <input id="import-json" type="file" accept="application/json,.json" hidden></label>
+        </div>
+        <p class="muted">Los exámenes se guardan solo en este navegador. Exporte los que quiera conservar. Marque como <b>normal</b> los sujetos sanos que servirán para la base normativa.</p>
+        <p id="history-empty" class="muted">Todavía no hay exámenes guardados.</p>
+        <div class="table-wrap">
+          <table class="list">
+            <thead><tr><th>Fecha</th><th>Paciente</th><th>Edad</th><th>Ojo</th><th>Prueba</th><th>Equipo</th><th>Resultado</th><th>Normal</th><th></th></tr></thead>
+            <tbody id="history-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Base normativa -->
+    <section data-view="normative" hidden>
+      <div class="card prose">
+        <h1>Base normativa</h1>
+        <p>Para calcular <b>MD, PSD, desviación total y desviación patrón</b> hace falta saber cómo responden ojos sanos <b>en este mismo tipo de equipo</b>, según la edad. Las bases del Humphrey u Octopus no sirven: el brillo, el fondo y la pantalla son distintos.</p>
+        <ol>
+          <li>Examine sujetos sanos (sin patología ocular, agudeza ≥ 20/25, refracción dentro de ±5 D) de todas las edades, idealmente 10 o más por década entre 20 y 80 años.</li>
+          <li>Marque esos exámenes como <b>normal</b> (en el formulario o en el Historial).</li>
+          <li>Construya la base aquí. Con menos de 60 sujetos los límites de probabilidad son poco confiables.</li>
+          <li>Exporte la base y compártala: así otros centros con el mismo visor pueden usarla y sumarle datos.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h2>Exámenes normales disponibles</h2>
+        <p id="norm-groups-empty" class="muted">No hay exámenes marcados como normales.</p>
+        <div class="table-wrap">
+          <table class="list">
+            <thead><tr><th>Patrón</th><th>Estímulo</th><th>Equipo</th><th>Sujetos</th><th>Edades</th><th></th></tr></thead>
+            <tbody id="norm-groups"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="toolbar">
+          <h2>Bases guardadas</h2>
+          <span class="spacer"></span>
+          <label class="button">Importar base (JSON) <input id="import-norm" type="file" accept="application/json,.json" hidden></label>
+        </div>
+        <p id="norms-empty" class="muted">Aún no hay bases normativas.</p>
+        <ul id="norms-list" class="profiles"></ul>
+      </div>
+    </section>
+
+    <!-- Calibración -->
+    <section data-view="calibration" hidden>
+      <div class="card">
+        <h1>Calibración de la pantalla</h1>
+        <p>Apoye una <b>tarjeta bancaria</b> (o credencial del mismo tamaño) sobre el rectángulo y mueva el control hasta que coincidan exactamente.</p>
+        <div class="card-fit">
+          <div id="card-box" class="card-box"><span>Tarjeta</span></div>
+        </div>
+        <label>Tamaño <input id="card-slider" type="range" min="150" max="900" step="1"></label>
+        <p id="screen-size" class="hint"></p>
+        <div class="actions">
+          <button type="button" id="save-screen" class="primary">Guardar calibración de pantalla</button>
+          <button type="button" id="reset-screen">Borrar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h1>Calibración de luminancia</h1>
+        <p>Para que los decibeles sean reales, mida la luminancia (cd/m²) con un fotómetro, en el visor o en el monitor.</p>
+        <ol>
+          <li>Fije el fotómetro frente a la lente del ojo derecho del visor (o al centro del monitor).</li>
+          <li>Presione <b>Mostrar niveles</b>. Aparece un campo uniforme por cada nivel.</li>
+          <li>Anote la luminancia de cada nivel y presione el gatillo (o la barra espaciadora) para pasar al siguiente.</li>
+          <li>Escriba las mediciones abajo y guarde el perfil.</li>
+        </ol>
+        <div class="actions">
+          <button type="button" id="cal-xr" class="primary">Mostrar niveles en el visor</button>
+          <button type="button" id="cal-screen">Mostrar niveles en esta pantalla</button>
+        </div>
+      </div>
+      <form id="cal-form" class="card">
+        <h2>Nuevo perfil de luminancia</h2>
+        <label>Nombre del perfil
+          <input name="calName" required maxlength="60" placeholder="Ej. Pico Neo 3 Pro Eye · brillo 180 · consultorio 1">
+        </label>
+        <label>Mediciones: nivel (0–255), luminancia en cd/m²
+          <textarea name="measurements" rows="10" spellcheck="false"></textarea>
+        </label>
+        <div class="actions"><button type="submit" class="primary">Guardar perfil</button></div>
+      </form>
+      <div class="card">
+        <h2>Perfiles guardados</h2>
+        <p id="profiles-empty" class="muted">Aún no hay perfiles calibrados.</p>
+        <ul id="profiles-list" class="profiles"></ul>
+      </div>
+    </section>
+
+    <!-- Acerca de -->
+    <section data-view="about" hidden>
+      <div class="card prose">
+        <h1>Acerca de Perimetría Libre</h1>
+        <p>Campimetría estática automatizada para visores de realidad virtual y pantallas, escrita desde cero y publicada como código abierto (licencia MIT).</p>
+        <ul>
+          <li>Patrones 24-2, 30-2 y 10-2, umbral foveal, estímulos Goldmann I a V.</li>
+          <li>Estrategias ZEST (bayesiana), umbral completo 4-2 y tamizaje supraumbral.</li>
+          <li>Controles de fijación (mancha ciega), falsos positivos y negativos; vigilancia de mirada con cámara en modo pantalla.</li>
+          <li>MD, PSD, desviación total y patrón con mapas de probabilidad, usando una base normativa propia del equipo.</li>
+          <li>Monitor del operador en otra ventana o en otro equipo.</li>
+        </ul>
+        <p>Otras pruebas: agudeza visual, sensibilidad al contraste, rejilla de Amsler, estereopsis, visión de colores, foria subjetiva (Maddox) y Hess-Lancaster.</p>
+        <p><b>Limitaciones:</b> rango dinámico menor que un perímetro de cúpula; el visor no ofrece seguimiento ocular desde el navegador; los índices solo son válidos con una base normativa construida en el mismo tipo de equipo. No usar para diagnóstico sin validación clínica.</p>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="src/app/main.js"></script>
+</body>
+</html>
