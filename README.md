@@ -20,6 +20,7 @@ Funciona en el navegador, sin instalar nada: Pico, Meta Quest y otros visores co
 | Monitor del operador: cronómetro, progreso, mapa en vivo, pausa/detener, en otra ventana o equipo | ✅ |
 | Informe: umbrales, grises, desviación total y patrón, mapas de probabilidad, MD, PSD, gráfica de mirada | ✅ |
 | Herramienta para construir la base normativa propia por edad | ✅ |
+| Recolección de exámenes anonimizados (con consentimiento) en Google Sheets, con cola sin conexión | ✅ ver [docs/RECOLECCION-DATOS.md](docs/RECOLECCION-DATOS.md) |
 | Base normativa validada para cada visor | ⏳ hay que recolectarla (ver [docs/BASE-NORMATIVA.md](docs/BASE-NORMATIVA.md)) |
 | Seguimiento ocular dentro del visor | ⏳ el navegador no lo ofrece; requiere app nativa (OpenXR) |
 | **Otras pruebas:** agudeza visual, sensibilidad al contraste, Amsler, estereopsis, visión de colores, foria (Maddox), Hess-Lancaster | ✅ ver [docs/OTRAS-PRUEBAS.md](docs/OTRAS-PRUEBAS.md) |
@@ -44,6 +45,10 @@ WebXR exige **HTTPS**. La forma más simple es publicarlo gratis en GitHub Pages
 4. Opcional: "Añadir a la pantalla de inicio" para usarlo como app y sin conexión.
 
 Sirve cualquier otro hosting estático con HTTPS (Netlify, Cloudflare Pages, el servidor del consultorio, etc.).
+
+### Visores compatibles
+
+Cualquier visor cuyo navegador soporte WebXR: **Meta Quest 2/3/3S/Pro** (Meta Quest Browser), **Pico 4/4 Ultra/Neo 3** (Pico Browser), **HTC Vive Focus 3/XR Elite** (VIVE Browser), visores de PC con SteamVR (Chrome/Edge en Windows) y **Apple Vision Pro** (Safari; sin palanca, por ahora solo sirven las pruebas que se responden con el gatillo). Cada modelo necesita su propio perfil de luminancia y su base normativa.
 
 ### Durante el examen
 

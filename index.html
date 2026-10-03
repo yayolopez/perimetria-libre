@@ -52,7 +52,9 @@
           </label>
           <label>Patrón <select name="pattern"></select></label>
           <label>Estrategia <select name="strategy"></select></label>
+          <label>Diagnóstico (para la investigación) <select name="diagnosis" class="diagnosis"></select></label>
         </div>
+        <label class="check consent"><input type="checkbox" name="consent"> El paciente autorizó usar sus datos anonimizados para investigación</label>
 
         <details class="options">
           <summary>Opciones del examen</summary>
@@ -154,7 +156,9 @@
           <label>Edad <input name="age" type="number" min="1" max="120" inputmode="numeric"></label>
           <label><span id="test-eye-label">Ojo</span> <select name="eye"></select></label>
           <label>Distancia en pantalla (cm) <input name="distanceCm" type="number" min="20" max="800" step="1"></label>
+          <label>Diagnóstico (para la investigación) <select name="diagnosis" class="diagnosis"></select></label>
         </div>
+        <label class="check consent"><input type="checkbox" name="consent"> El paciente autorizó usar sus datos anonimizados para investigación</label>
         <p id="test-info" class="hint"></p>
         <div class="actions">
           <button type="button" id="test-xr" class="primary">Iniciar en visor VR</button>
@@ -203,6 +207,24 @@
 
     <!-- Base normativa -->
     <section data-view="normative" hidden>
+      <form id="sync-form" class="card" autocomplete="off">
+        <h1>Recolección de datos</h1>
+        <p class="muted">Cada examen con consentimiento se envía <b>anonimizado</b> (sin nombre, ID ni observaciones) a una hoja de Google Sheets de su cuenta. Si no hay internet, queda en cola y se envía después. Instrucciones: <a href="https://github.com/yayolopez/perimetria-libre/blob/main/docs/RECOLECCION-DATOS.md" target="_blank" rel="noopener">cómo crear la hoja</a>.</p>
+        <div class="grid">
+          <label>URL de la aplicación web (Apps Script) <input name="url" type="url" placeholder="https://script.google.com/macros/s/…/exec"></label>
+          <label>Clave <input name="key" type="password" autocomplete="off"></label>
+          <label>Nombre del consultorio o equipo <input name="site" maxlength="40" placeholder="Ej. consultorio-1-pico"></label>
+        </div>
+        <label class="check"><input type="checkbox" name="auto"> Enviar automáticamente al guardar cada examen</label>
+        <p id="sync-status" class="hint"></p>
+        <div class="actions">
+          <button type="submit" class="primary">Guardar</button>
+          <button type="button" id="sync-test">Probar conexión</button>
+          <button type="button" id="sync-now">Enviar pendientes</button>
+          <button type="button" id="sync-link">Copiar enlace para configurar otro equipo</button>
+          <button type="button" id="sync-export">Exportar todo anonimizado (JSON)</button>
+        </div>
+      </form>
       <div class="card prose">
         <h1>Base normativa</h1>
         <p>Para calcular <b>MD, PSD, desviación total y desviación patrón</b> hace falta saber cómo responden ojos sanos <b>en este mismo tipo de equipo</b>, según la edad. Las bases del Humphrey u Octopus no sirven: el brillo, el fondo y la pantalla son distintos.</p>

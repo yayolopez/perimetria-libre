@@ -17,6 +17,8 @@ import { ResponseSound } from './sound.js';
 import * as store from './storage.js';
 import { TESTS, testById } from './tests/index.js';
 import { ScreenCanvasRenderer } from './canvas-renderers.js';
+import * as sync from './sync.js';
+import { DIAGNOSES, anonymize } from '../core/anonymize.js';
 
 const $ = (sel) => document.querySelector(sel);
 const MODE_LABEL = { xr: 'Visor VR', screen: 'Pantalla', simulation: 'Simulación' };
@@ -65,6 +67,7 @@ function populateForm() {
   form.distanceCm.value = prefs.distanceCm ?? '';
   for (const name of ['foveal', 'sound', 'gaze']) form[name].checked = Boolean(prefs[name]);
   form.remoteMonitor.checked = false;
+  document.querySelectorAll('select.diagnosis').forEach((sel) => fillSelect(sel, Object.entries(DIAGNOSES)));
   updateInfo();
 }
 
@@ -91,7 +94,9 @@ function readConfig() {
     eye: form.eye.value,
     correction: form.correction.value.trim(),
     notes: form.notes.value.trim(),
-    normal: form.normal.checked,
+    normal: form.normal.checked || form.diagnosis.value === 'normal',
+    diagnosis: form.diagnosis.value,
+    consent: form.consent.checked,
     patternId: form.pattern.value,
     strategy: form.strategy.value,
     profile,
@@ -100,14 +105,15 @@ function readConfig() {
     options,
   };
   const { remoteMonitor, ...persisted } = options;
+  // Se combinan con las preferencias existentes (calibración de pantalla, envío de datos…).
   store.savePrefs({
+    ...store.loadPrefs(),
     ...persisted,
     pattern: cfg.patternId,
     strategy: cfg.strategy,
     profile: profile.id,
     background: form.background.value,
     distanceCm: form.distanceCm.value,
-    screenPxPerMm: store.loadPrefs().screenPxPerMm,
   });
   return cfg;
 }
@@ -247,6 +253,8 @@ function prepare(mode) {
     correction: cfg.correction,
     notes: cfg.notes,
     normal: cfg.normal && mode !== 'simulation',
+    diagnosis: cfg.diagnosis,
+    consent: cfg.consent && mode !== 'simulation',
     profile: { id: cfg.profile.id, name: cfg.profile.name, calibrated: Boolean(cfg.profile.calibrated) },
     backgroundCdm2: display.backgroundCdm2,
     stimulusSizeDeg: sizeDeg,
@@ -359,6 +367,7 @@ async function runLive(mode) {
   }
   const result = summarize(session, meta);
   currentResult = store.saveResult(result) ?? result;
+  queueForResearch(currentResult);
   host.send({ type: 'result', result: currentResult });
   showReport(currentResult);
 }
@@ -434,7 +443,7 @@ function renderHistory() {
         <td>${esc(t ? r.meta.eye : r.config.eye)}</td>
         <td>${esc(t ? t.name : `Campimetría ${r.config.patternId}`)}</td>
         <td>${esc(MODE_LABEL[r.meta.mode] ?? r.meta.mode)}</td>
-        <td class="summary-cell">${esc(summary)}</td>
+        <td class="summary-cell">${esc(summary)}${r.meta.consent ? (r.meta.uploadedAt ? ' <span title="Enviado a la base de investigación">· ☁ enviado</span>' : ' <span title="En cola para enviar">· ⏳ pendiente</span>') : ''}</td>
         <td>${t ? '' : `<input type="checkbox" data-normal="${esc(r.id)}" ${r.meta.normal ? 'checked' : ''} aria-label="Sujeto normal">`}</td>
         <td class="actions">
           <button type="button" data-open="${esc(r.id)}">Ver</button>
@@ -758,6 +767,8 @@ function testMeta(mode, pxPerDeg, geometry, completed) {
     patientId: testForm.patientId.value.trim(),
     age: testForm.age.value ? Number(testForm.age.value) : null,
     eye: testForm.eye.value,
+    diagnosis: testForm.diagnosis.value,
+    consent: testForm.consent.checked && mode !== 'simulation',
     pxPerDeg: Math.round(pxPerDeg * 10) / 10,
     screen: geometry,
     completed,
@@ -800,7 +811,9 @@ async function runOtherTest(mode) {
     return;
   }
   const result = makeTestResult(t, testMeta(mode, pxPerDeg, geometry, true), session.result());
-  showTestReport(store.saveResult(result) ?? result);
+  const saved = store.saveResult(result) ?? result;
+  queueForResearch(saved);
+  showTestReport(saved);
 }
 
 function runSimulatedTest() {
@@ -846,6 +859,92 @@ $('#test-print').addEventListener('click', () => window.print());
 
 renderTestCards();
 
+
+// ---------- Recolección de datos ----------
+const syncForm = $('#sync-form');
+
+function queueForResearch(result) {
+  if (sync.enqueue(result) && sync.syncSettings().auto) flushResearch();
+}
+
+async function flushResearch() {
+  const r = await sync.flush(testById);
+  renderSyncStatus(r.lastError ? `Último error: ${r.lastError}` : r.sent ? `Enviados ${r.sent} exámenes.` : '');
+  if (!$('[data-view="history"]').hidden) renderHistory();
+  return r;
+}
+
+function renderSyncStatus(extra = '') {
+  const s = sync.syncSettings();
+  const el = $('#sync-status');
+  el.className = sync.isConfigured() ? 'hint' : 'hint hint--warn';
+  el.textContent = `${sync.isConfigured() ? `Configurado (${s.site || 'sin nombre de consultorio'}).` : 'Sin configurar: los exámenes quedan solo en este equipo.'} Pendientes de enviar: ${sync.pendingCount()}. ${extra}`;
+}
+
+function fillSyncForm() {
+  const s = sync.syncSettings();
+  syncForm.url.value = s.url;
+  syncForm.key.value = s.key;
+  syncForm.site.value = s.site;
+  syncForm.auto.checked = s.auto !== false;
+  renderSyncStatus();
+}
+
+syncForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  sync.saveSyncSettings({
+    url: syncForm.url.value.trim(),
+    key: syncForm.key.value.trim(),
+    site: syncForm.site.value.trim(),
+    auto: syncForm.auto.checked,
+  });
+  renderSyncStatus('Guardado.');
+});
+
+$('#sync-test').addEventListener('click', async () => {
+  syncForm.requestSubmit();
+  renderSyncStatus('Probando…');
+  try {
+    await sync.testConnection();
+    renderSyncStatus('Conexión correcta ✓');
+  } catch (err) {
+    renderSyncStatus(`No se pudo conectar: ${err.message}`);
+  }
+});
+
+$('#sync-now').addEventListener('click', () => {
+  // Incluye exámenes con consentimiento guardados antes de configurar el envío.
+  store.listResults().forEach((r) => sync.enqueue(r));
+  renderSyncStatus('Enviando…');
+  flushResearch();
+});
+
+$('#sync-link').addEventListener('click', async () => {
+  const link = sync.configLink(location.href);
+  try {
+    await navigator.clipboard.writeText(link);
+    renderSyncStatus('Enlace copiado. Ábralo en el visor (por ejemplo enviándolo por correo) y quedará configurado.');
+  } catch {
+    prompt('Copie este enlace y ábralo en el otro equipo:', link);
+  }
+});
+
+$('#sync-export').addEventListener('click', () => {
+  const { site } = sync.syncSettings();
+  const records = store.listResults().filter((r) => r.meta.consent && r.meta.mode !== 'simulation').map((r) => anonymize(r, { site }));
+  download(`perimetria-libre_anonimizado_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(records, null, 2), 'application/json');
+});
+
+window.addEventListener('online', () => sync.isConfigured() && flushResearch());
+
+// El enlace de configuración puede abrirse con la app ya cargada.
+window.addEventListener('hashchange', () => {
+  if (!sync.applyConfigFromLocation()) return;
+  fillSyncForm();
+  show('normative');
+  renderSyncStatus('Este equipo quedó configurado con el enlace.');
+});
+
 // ---------- Arranque ----------
 async function detectXR() {
   const status = $('#xr-status');
@@ -874,9 +973,13 @@ async function detectXR() {
   }
 }
 
+const configured = sync.applyConfigFromLocation();
 populateForm();
+fillSyncForm();
 detectXR();
-show('new');
+show(configured ? 'normative' : 'new');
+if (configured) renderSyncStatus('Este equipo quedó configurado con el enlace.');
+if (sync.isConfigured() && sync.syncSettings().auto) flushResearch();
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('./sw.js').catch(() => {});

@@ -1,6 +1,6 @@
 // Service worker: permite usar la app sin conexión una vez cargada.
 // Estrategia "red primero": siempre intenta la versión más nueva y cae a caché si no hay red.
-const CACHE = 'perimetria-libre-v3';
+const CACHE = 'perimetria-libre-v4';
 const SHELL = [
   './',
   'index.html',
@@ -13,6 +13,7 @@ const SHELL = [
   'src/app/monitor-view.js',
   'src/app/monitor-link.js',
   'src/app/sound.js',
+  'src/app/sync.js',
   'src/app/gaze.js',
   'src/app/runner.js',
   'src/app/report.js',
@@ -44,6 +45,7 @@ const SHELL = [
   'src/core/screenGeometry.js',
   'src/core/strategies/supraThreshold.js',
   'src/core/adaptive.js',
+  'src/core/anonymize.js',
   'src/core/tests/acuity.js',
   'src/core/tests/contrast.js',
   'src/core/tests/amsler.js',

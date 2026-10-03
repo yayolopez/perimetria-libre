@@ -247,6 +247,9 @@ h3 { font-size: 1rem; margin: 16px 0 6px; }
 .mon__gaze .bad { color: var(--danger); }
 .mon__controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 
+/* Consentimiento */
+.consent { margin-top: 14px; padding: 10px 12px; border: 1px dashed var(--border); border-radius: 8px; }
+
 /* Otras pruebas */
 .test-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .test-card {

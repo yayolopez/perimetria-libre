@@ -146,3 +146,26 @@ test('Hess: desviaciones del ojo no fijador', () => {
   assert.approx(r.maxLeftPd, degToPrismDiopters(2), 0.01);
   assert.approx(r.maxRightPd, 0, 1e-6);
 });
+
+import { anonymize, isShareable } from '../src/core/anonymize.js';
+
+test('anonimización: quita datos identificatorios y el registro detallado', () => {
+  const r = {
+    app: 'perimetria-libre',
+    id: 'abc',
+    meta: { patientId: 'Juan Pérez', notes: 'vive en ...', age: 61, consent: true, mode: 'xr', uploadedAt: 'x' },
+    log: [{ kind: 'stimulus' }],
+    points: [{ id: 0, threshold: 30 }],
+  };
+  const a = anonymize(r, { site: 'consultorio-1' });
+  assert.equal(a.meta.patientId, undefined);
+  assert.equal(a.meta.notes, undefined);
+  assert.equal(a.log, undefined);
+  assert.equal(a.meta.uploadedAt, undefined);
+  assert.equal(a.meta.age, 61);
+  assert.equal(a.meta.site, 'consultorio-1');
+  assert.equal(r.meta.patientId, 'Juan Pérez', 'no modifica el original');
+  assert.ok(isShareable(r));
+  assert.ok(!isShareable({ meta: { consent: false } }), 'sin consentimiento no se envía');
+  assert.ok(!isShareable({ meta: { consent: true, mode: 'simulation' } }), 'simulaciones no se envían');
+});
